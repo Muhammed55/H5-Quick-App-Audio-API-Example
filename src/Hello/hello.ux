@@ -1,0 +1,123 @@
+<template>
+    <div class="doc-page">
+        <web class="web-page" src="{{loadUrl}}" trustedurl="{{list}}" onpagestart="onPageStart" onpagefinish="onPageFinish"
+            onmessage="onMessage" ontitlereceive="onTitleReceive" onerror="onError" id="web" supportzoom="{{supportZoom}}"
+            wideviewport="{{wideViewport}}" overviewmodeinload="{{overViewModeLoad}}" useragent="{{userAgent}}"
+            allowthirdpartycookies="{{allowThirdPartyCookies}}" multiwindow="{{multiwindow}}" jumppolicy="{{jumppolicy}}">
+        </web>
+    </div>
+</template>
+
+<style>
+    .doc-page {
+        flex-direction: column;
+        flex-direction: column;
+        justify-content: center;
+        align-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        position: fixed;
+    }
+
+    .web-page {
+        width: 100%;
+        height: 100%;
+    }
+</style>
+<script>
+    import router from "@system.router";
+    import audio from '@system.audio';
+
+    export default {
+        props: ['websrc'],
+        data: {
+            // For mroe information about <web>, please check :
+            // https://developer.huawei.com/consumer/en/doc/development/quickApp-References/quickapp-component-web
+
+            title: "",
+            // TODO Replace the link to the H5 app
+            loadUrl: "http://192.168.1.152:8081/audioPlayingWebsite/index.html",
+            // Attribute allowthirdpartycookies, indicates whether cookies can be delivered in cross-domain mode.
+            // If you need login Google Account or Other Account, Please set TRUE.
+            allowThirdPartyCookies: true,
+            //Attribute supportzoom, indicates whether the H5 page can be zoomed with gestures.
+            supportZoom: true,
+            wideViewport: true,
+            overViewModeLoad: true,
+            // userAgent of the web component. The quick app userAgent is used by default. You can use Chrome UA like 
+            // 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Mobile Safari/537.36'
+            userAgent: "default",
+            // Here the whitelist settings, when the loading page has multiple addresses, such as the successful loading of the login address and the
+            // inconsistent entry address, it needs to set the whitelist to do so.
+            list: ["new RegExp('https?.*')"],
+            // Indicates whether the web component supports multi-window display.
+            multiwindow: false,
+            // Multi-window opening policy. 
+            // browser: Multiple windows started in the web component  are opened in the system browser.
+            // default: Multiple windows started in the web component  are opened in the quick app.
+            jumppolicy: 'default',
+        },
+        onInit() {
+            console.info('onInit: ');
+            // Functions triggered when the audio play status changes
+            // postMessage is used to send a message from the Quick App to the webpage
+            audio.onplay = () => {
+                console.log("audio onplay");
+                this.$element('web').postMessage({ message: "audio_play" });
+            }
+            audio.onpause = () => {
+                console.log("audio onpause");
+                this.$element('web').postMessage({ message: "audio_pause" });
+            }
+        },
+        onPageStart(e) {
+            console.info('pagestart: ' + e.url)
+        },
+        // Each page switch triggers
+        onPageFinish(e) {
+            console.info('pagefinish: ' + e.url, e.canBack, e.canForward);
+        },
+        onTitleReceive(e) {
+            this.title = e.title;
+        },
+        onError(e) {
+            console.info('pageError : ' + e.errorMsg)
+        },
+        // Function triggered when the Quick App receives a message from the webpage
+        onMessage(e) {
+            console.info('onmessage e = ' + e.message + ", url = " + e.url);
+            // Parse the message and handle it accordingly
+            var jsonMessage = JSON.parse(e.message);
+            if(jsonMessage["action"] === "play") {
+                audio.src = jsonMessage["audioUrl"];
+                audio.play();
+            }
+            else if(jsonMessage["action"] === "pause") {
+                audio.pause();
+            }
+        },
+        onShow: function () {
+            console.info(" onshow");
+
+        },
+        onHide: function () {
+            console.info("  onHide");
+        },
+        onBackPress() {
+            console.log('onBackPress')
+            this.$element('web').canBack({
+                callback: function (e) {
+                    if (e) {
+                        console.log('web back')
+                        this.$element('web').back()
+                    } else {
+                        console.log('router back')
+                        router.back()
+                    }
+                }.bind(this)
+            })
+            return true
+        }
+    }
+</script>

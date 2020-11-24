@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Title</title>
+	<script>
+		var playStatus = "paused";
+		function playPauseAudio() {
+			var audio = document.getElementById('audio');
+			if(window.navigator.userAgent.indexOf("hap") >= 0) {
+				var audioSrc = audio.src;
+				var message = playStatus === "paused" ? { action: "play", "audioUrl": audioSrc } : { action: "pause" };
+				system.postMessage(JSON.stringify(message));
+				return;
+			}
+			audio.paused ? audio.play() : audio.pause();
+		}
+		
+		function onAudioPlay() {
+			document.getElementById('playPauseButton').innerHTML = "pause Audio";
+			playStatus = "playing";
+		}
+		
+		function onAudioPause() {
+			document.getElementById('playPauseButton').innerHTML = "play Audio";
+			playStatus = "paused";
+		}
+		
+		system.onmessage = function(message) {
+			switch(message) {
+				case "audio_play":
+					onAudioPlay();
+					break;
+				case "audio_pause":
+					onAudioPause();
+					break;
+				default:
+			}
+		}
+	</script>
+
+  </head>
+
+  <body class="index">
+	<audio id="audio" src="https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_700KB.mp3" preload="auto"
+			onplay="onAudioPlay()" onpause="onAudioPause()"></audio>
+	<button id="playPauseButton" type="button" onclick="playPauseAudio()">Play audio</button>
+
+  </body>
+</html>
